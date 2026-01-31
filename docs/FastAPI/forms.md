@@ -1,268 +1,187 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 ---
 
-# Input van gebruiker
+# Eigen POST request
 
-Tot nu toe hebben we alleen data *getoond* aan gebruikers. Maar hoe ontvangen we data *van* gebruikers? Dat doen we met HTML formulieren! In deze les leer je hoe je formulieren maakt en hoe je de data verwerkt in FastAPI.
+Tot nu toe hebben we alleen data *getoond* aan gebruikers. Maar hoe ontvangen we data *van* gebruikers? Dat doen we met HTML formulieren en POST requests!
 
-## Wat zijn formulieren?
+## Een simpel formulier
 
-Formulieren zijn HTML elementen waarmee gebruikers data kunnen invoeren en versturen naar de server. Denk aan:
-- Inlogformulieren (gebruikersnaam + wachtwoord)
-- Registratieformulieren (naam, email, etc.)
-- Contactformulieren
-- Zoekformulieren
+Laten we een simpel formulier maken waar iemand zijn naam kan invullen.
 
-## Een simpel formulier maken
+### Stap 1: HTML formulier maken
 
-Maak `templates/contact.html`:
+Maak een bestand `static/pages/naam_form.html`:
 
 ```html
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Contact</title>
+        <title>Naam Formulier</title>
     </head>
     <body>
-        <h1>Contact Formulier</h1>
-        <form method="post" action="/contact">
-            <div>
-                <label for="naam">Naam:</label>
-                <input type="text" id="naam" name="naam" required>
-            </div>
-
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-
-            <div>
-                <label for="bericht">Bericht:</label>
-                <textarea id="bericht" name="bericht" rows="5" required></textarea>
-            </div>
-
+        <h1>Wat is je naam?</h1>
+        <form method="post" action="/verstuur">
+            <label for="naam">Naam:</label>
+            <input type="text" id="naam" name="naam" required>
             <button type="submit">Verstuur</button>
         </form>
     </body>
 </html>
 ```
 
-### Belangrijke HTML elementen
+### Belangrijke onderdelen
 
-- `<form method="post" action="/contact">` - Het formulier stuurt data via POST naar `/contact`
-- `<input type="text" name="naam">` - Tekst invoerveld met naam "naam"
-- `<input type="email" name="email">` - Email invoerveld (met validatie)
-- `<textarea name="bericht">` - Meerdere regels tekst
-- `name="..."` - De naam van het veld (belangrijk voor FastAPI!)
-- `required` - Dit veld is verplicht
-- `<button type="submit">` - Knop om het formulier te versturen
+- `<form method="post" action="/verstuur">` - Stuurt data via POST naar `/verstuur`
+- `<input name="naam">` - Invoerveld met naam "naam"
+- `name="naam"` - Deze naam gebruiken we straks in Python!
+- `required` - Veld is verplicht
+- `<button type="submit">` - Knop om te versturen
 
-## Form data ontvangen in FastAPI
+### Stap 2: GET endpoint (formulier tonen)
 
-Voeg deze imports toe aan `main.py`:
+In `main.py`:
 
 ```python
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+
+app = FastAPI()
+
+@app.get("/naam")
+async def toon_formulier():
+    return FileResponse("static/pages/naam_form.html")
 ```
 
-### GET endpoint (formulier tonen)
+Dit toont het lege formulier.
+
+### Stap 3: POST endpoint (data ontvangen)
+
+Voeg deze imports toe:
 
 ```python
-@app.get("/contact", response_class=HTMLResponse)
-async def contact_form(request: Request):
-    return templates.TemplateResponse(
-        "contact.html",
-        {"request": request}
-    )
+from fastapi import FastAPI, Form
+from fastapi.responses import FileResponse
 ```
 
-### POST endpoint (data ontvangen)
+Voeg een POST endpoint toe:
 
 ```python
-@app.post("/contact")
-async def contact_submit(
-    naam: str = Form(...),
-    email: str = Form(...),
-    bericht: str = Form(...)
-):
-    # Hier kun je iets doen met de data
-    print(f"Naam: {naam}")
-    print(f"Email: {email}")
-    print(f"Bericht: {bericht}")
-
-    # Redirect naar een bedankt pagina
-    return RedirectResponse(url="/bedankt", status_code=303)
+@app.post("/verstuur")
+async def ontvang_naam(naam: str = Form(...)):
+    print(f"Naam ontvangen: {naam}")
+    return {"bericht": f"Hallo {naam}!"}
 ```
 
 ### Wat doet deze code?
 
-- `@app.post("/contact")` - Luistert naar POST requests op `/contact`
+- `@app.post("/verstuur")` - Luistert naar POST requests op `/verstuur`
 - `naam: str = Form(...)` - Haalt het veld `naam` uit het formulier
-- `Form(...)` - Vertelt FastAPI dat dit een form veld is
-- `RedirectResponse` - Stuurt de gebruiker door naar een andere pagina
+- `Form(...)` - Vertelt FastAPI dat dit een formulier veld is
+- De `...` betekent dat het veld verplicht is
 
-### Bedankt pagina
+## Testen
 
-Maak `templates/bedankt.html`:
+1. Start je server: `fastapi dev main.py`
+2. Ga naar: `http://127.0.0.1:8000/naam`
+3. Vul je naam in en klik op Verstuur
+4. Je ziet een JSON bericht: `{"bericht": "Hallo Jan!"}`
+5. In de terminal zie je: `Naam ontvangen: Jan`
+
+## Meerdere velden
+
+Je kunt meerdere velden toevoegen:
 
 ```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Bedankt</title>
-    </head>
-    <body>
-        <h1>Bedankt!</h1>
-        <p>Je bericht is succesvol verzonden.</p>
-        <a href="/contact">Nog een bericht sturen</a>
-    </body>
-</html>
+<form method="post" action="/registreer">
+    <label for="naam">Naam:</label>
+    <input type="text" name="naam" required>
+
+    <label for="leeftijd">Leeftijd:</label>
+    <input type="number" name="leeftijd" required>
+
+    <button type="submit">Verstuur</button>
+</form>
 ```
 
-En de endpoint:
+En in Python:
 
 ```python
-@app.get("/bedankt", response_class=HTMLResponse)
-async def bedankt(request: Request):
-    return templates.TemplateResponse(
-        "bedankt.html",
-        {"request": request}
-    )
-```
-
-## Form data terug tonen
-
-Je kunt de ingevoerde data ook terug tonen aan de gebruiker. Pas de POST endpoint aan:
-
-```python
-@app.post("/contact")
-async def contact_submit(
-    request: Request,
+@app.post("/registreer")
+async def registreer(
     naam: str = Form(...),
-    email: str = Form(...),
-    bericht: str = Form(...)
+    leeftijd: int = Form(...)
 ):
-    return templates.TemplateResponse(
-        "contact_resultaat.html",
-        {
-            "request": request,
-            "naam": naam,
-            "email": email,
-            "bericht": bericht
-        }
-    )
+    print(f"{naam} is {leeftijd} jaar oud")
+    return {"naam": naam, "leeftijd": leeftijd}
 ```
 
-Maak `templates/contact_resultaat.html`:
-
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Bericht Ontvangen</title>
-    </head>
-    <body>
-        <h1>Bericht Ontvangen</h1>
-        <div>
-            <p><strong>Naam:</strong> {{ naam }}</p>
-            <p><strong>Email:</strong> {{ email }}</p>
-            <p><strong>Bericht:</strong><br>{{ bericht }}</p>
-        </div>
-        <a href="/contact">Terug naar formulier</a>
-    </body>
-</html>
-```
+**Let op:** De `name` in HTML moet matchen met de parameter naam in Python!
 
 ## Verschillende input types
-
-HTML heeft verschillende input types voor verschillende soorten data:
 
 ```html
 <!-- Tekst -->
 <input type="text" name="naam">
 
-<!-- Email (met validatie) -->
+<!-- Email -->
 <input type="email" name="email">
 
-<!-- Wachtwoord (verborgen) -->
+<!-- Nummer -->
+<input type="number" name="leeftijd">
+
+<!-- Wachtwoord (sterretjes) -->
 <input type="password" name="wachtwoord">
 
-<!-- Nummer -->
-<input type="number" name="leeftijd" min="0" max="120">
-
-<!-- Datum -->
-<input type="date" name="geboortedatum">
-
-<!-- Checkbox -->
-<input type="checkbox" name="nieuwsbrief" value="ja">
-
-<!-- Radio buttons -->
-<input type="radio" name="geslacht" value="man"> Man
-<input type="radio" name="geslacht" value="vrouw"> Vrouw
-
-<!-- Select (dropdown) -->
-<select name="land">
-    <option value="nl">Nederland</option>
-    <option value="be">België</option>
-    <option value="de">Duitsland</option>
-</select>
+<!-- Textarea (meerdere regels) -->
+<textarea name="bericht"></textarea>
 ```
 
 ## Opdrachten
 
-### Opdracht 1: Predict - Wat gebeurt er?
+### Opdracht 1: Predict - Wat zie je?
 
-Bekijk dit formulier:
+Gegeven dit formulier:
 
 ```html
-<form method="post" action="/registreer">
-    <input type="text" name="gebruikersnaam">
-    <input type="password" name="wachtwoord">
-    <button type="submit">Registreer</button>
+<form method="post" action="/groet">
+    <input type="text" name="naam">
+    <button type="submit">Verstuur</button>
 </form>
 ```
 
 En deze Python code:
 
 ```python
-@app.post("/registreer")
-async def registreer(
-    gebruikersnaam: str = Form(...),
-    wachtwoord: str = Form(...)
-):
-    return {"gebruiker": gebruikersnaam, "wachtwoord_lengte": len(wachtwoord)}
+@app.post("/groet")
+async def groet(naam: str = Form(...)):
+    return {"groet": f"Hallo {naam}!"}
 ```
 
-**Vragen:**
-1. Wat gebeurt er als je op "Registreer" klikt?
-2. Welke HTTP method wordt gebruikt?
-3. Wat wordt er geretourneerd?
+**Vraag:** Als je "Sarah" invult, wat zie je dan in de browser?
 
 <details>
-<summary>Klik hier voor de antwoorden</summary>
+<summary>Klik hier voor het antwoord</summary>
 
-1. Het formulier stuurt de data via POST naar `/registreer`. FastAPI ontvangt de data en voert de functie uit.
-2. POST method (staat in `method="post"`)
-3. Een JSON object met de gebruikersnaam en de lengte van het wachtwoord (niet het wachtwoord zelf - goed voor security!)
+Je ziet: `{"groet": "Hallo Sarah!"}`
 
-Voorbeeld output: `{"gebruiker": "jan123", "wachtwoord_lengte": 8}`
+De browser toont een JSON object met je naam erin verwerkt.
 
 </details>
 
-### Opdracht 2: Run - Test een simpel formulier
+### Opdracht 2: Run - Maak je eerste formulier
 
-Maak het contact formulier uit de les en test het:
-1. Maak `templates/contact.html`
-2. Voeg de GET en POST endpoints toe aan `main.py`
-3. Maak `templates/bedankt.html`
-4. Test het in je browser op `/contact`
+Maak een formulier waar iemand zijn favoriete kleur kan invullen:
 
-**Vraag:** Zie je de data in je terminal als je het formulier verstuurt?
+1. Maak `static/pages/kleur_form.html` met een formulier
+2. Voeg een GET endpoint `/kleur` toe om het formulier te tonen
+3. Voeg een POST endpoint `/kleur_verstuur` toe om de data te ontvangen
+4. Print de kleur in de terminal
 
-### Opdracht 3: Investigate - Optionele velden
+Test het!
+
+### Opdracht 3: Investigate - Verplicht vs Optioneel
 
 Bekijk dit verschil:
 
@@ -270,565 +189,87 @@ Bekijk dit verschil:
 # Verplicht veld
 naam: str = Form(...)
 
-# Optioneel veld met default waarde
-telefoonnummer: str = Form(None)
-
-# Optioneel veld met andere default
-land: str = Form("Nederland")
+# Optioneel veld
+bijnaam: str = Form(None)
 ```
 
-**Vragen:**
-1. Wat gebeurt er als je een verplicht veld leeg laat?
-2. Wat is de waarde van `telefoonnummer` als je het veld leeg laat?
-3. Hoe kun je in de template checken of een optioneel veld is ingevuld?
+**Vraag:** Wat gebeurt er als je een verplicht veld leeg laat?
 
 <details>
-<summary>Klik hier voor de antwoorden</summary>
+<summary>Klik hier voor het antwoord</summary>
 
-1. FastAPI geeft een error (422 Unprocessable Entity) omdat het veld verplicht is door `Form(...)`
-2. De waarde is `None` (Python's null waarde)
-3. In de template kun je checken met:
-```html
-{% if telefoonnummer %}
-    <p>Telefoonnummer: {{ telefoonnummer }}</p>
-{% else %}
-    <p>Geen telefoonnummer opgegeven</p>
-{% endif %}
-```
+FastAPI geeft een 422 error omdat het veld verplicht is. Het formulier wordt niet verwerkt.
+
+Bij een optioneel veld (`Form(None)`) krijgt de variabele de waarde `None` als je het veld leeg laat.
 
 </details>
 
-### Opdracht 4: Modify - Voeg velden toe
+### Opdracht 4: Modify - Twee velden
 
-Pas het contact formulier aan door deze velden toe te voegen:
-1. Een telefoonnummer veld (optioneel)
-2. Een dropdown voor het onderwerp (keuze uit: "Vraag", "Klacht", "Compliment")
-3. Een checkbox voor "Ik wil een antwoord ontvangen"
+Pas je formulier uit Opdracht 2 aan en voeg een tweede veld toe voor "leeftijd".
 
-Update ook de POST endpoint om deze velden te ontvangen en toon ze in het resultaat.
+Update ook de POST endpoint om beide velden te ontvangen en te printen.
+
+### Opdracht 5: Make - Contact formulier
+
+Maak een contact formulier met:
+- Naam (text, verplicht)
+- Email (email, verplicht)
+- Bericht (textarea, verplicht)
+
+Print alle gegevens in de terminal als het formulier wordt verstuurd.
 
 <details>
-<summary>Klik hier voor een voorbeeldoplossing</summary>
+<summary>Klik hier voor een hint</summary>
 
-**templates/contact_uitgebreid.html:**
+HTML:
 ```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Contact</title>
-    </head>
-    <body>
-        <h1>Contact Formulier</h1>
-        <form method="post" action="/contact-uitgebreid">
-            <div>
-                <label for="naam">Naam:</label>
-                <input type="text" id="naam" name="naam" required>
-            </div>
-
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-
-            <div>
-                <label for="telefoon">Telefoonnummer (optioneel):</label>
-                <input type="tel" id="telefoon" name="telefoon">
-            </div>
-
-            <div>
-                <label for="onderwerp">Onderwerp:</label>
-                <select id="onderwerp" name="onderwerp" required>
-                    <option value="vraag">Vraag</option>
-                    <option value="klacht">Klacht</option>
-                    <option value="compliment">Compliment</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="bericht">Bericht:</label>
-                <textarea id="bericht" name="bericht" rows="5" required></textarea>
-            </div>
-
-            <div>
-                <input type="checkbox" id="antwoord" name="antwoord" value="ja">
-                <label for="antwoord">Ik wil een antwoord ontvangen</label>
-            </div>
-
-            <button type="submit">Verstuur</button>
-        </form>
-    </body>
-</html>
+<form method="post" action="/contact">
+    <input type="text" name="naam" required>
+    <input type="email" name="email" required>
+    <textarea name="bericht" required></textarea>
+    <button type="submit">Verstuur</button>
+</form>
 ```
 
-**main.py:**
+Python:
 ```python
-@app.get("/contact-uitgebreid", response_class=HTMLResponse)
-async def contact_uitgebreid_form(request: Request):
-    return templates.TemplateResponse(
-        "contact_uitgebreid.html",
-        {"request": request}
-    )
-
-@app.post("/contact-uitgebreid")
-async def contact_uitgebreid_submit(
-    request: Request,
+@app.post("/contact")
+async def contact(
     naam: str = Form(...),
     email: str = Form(...),
-    telefoon: str = Form(None),
-    onderwerp: str = Form(...),
-    bericht: str = Form(...),
-    antwoord: str = Form(None)
+    bericht: str = Form(...)
 ):
-    return templates.TemplateResponse(
-        "contact_uitgebreid_resultaat.html",
-        {
-            "request": request,
-            "naam": naam,
-            "email": email,
-            "telefoon": telefoon,
-            "onderwerp": onderwerp,
-            "bericht": bericht,
-            "antwoord": antwoord
-        }
-    )
+    print(f"Van: {naam} ({email})")
+    print(f"Bericht: {bericht}")
+    return {"status": "ontvangen"}
 ```
-
-**templates/contact_uitgebreid_resultaat.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Bericht Ontvangen</title>
-    </head>
-    <body>
-        <h1>Bericht Ontvangen</h1>
-        <div>
-            <p><strong>Naam:</strong> {{ naam }}</p>
-            <p><strong>Email:</strong> {{ email }}</p>
-            {% if telefoon %}
-            <p><strong>Telefoon:</strong> {{ telefoon }}</p>
-            {% endif %}
-            <p><strong>Onderwerp:</strong> {{ onderwerp|upper }}</p>
-            <p><strong>Bericht:</strong><br>{{ bericht }}</p>
-            <p>
-                {% if antwoord %}
-                    ✅ U wilt een antwoord ontvangen
-                {% else %}
-                    ℹ️ U wilt geen antwoord ontvangen
-                {% endif %}
-            </p>
-        </div>
-        <a href="/contact-uitgebreid">Terug naar formulier</a>
-    </body>
-</html>
-```
-
-</details>
-
-### Opdracht 5: Make - Registratie formulier
-
-Maak een registratie formulier voor een website met de volgende velden:
-- Gebruikersnaam (verplicht, text)
-- Email (verplicht, email)
-- Wachtwoord (verplicht, password)
-- Wachtwoord bevestigen (verplicht, password)
-- Geboortedatum (verplicht, date)
-- Land (verplicht, select met minimaal 3 landen)
-- Akkoord met voorwaarden (verplicht, checkbox)
-
-**Extra uitdaging:** Check in Python of de twee wachtwoorden hetzelfde zijn. Als ze niet hetzelfde zijn, toon dan een error pagina.
-
-<details>
-<summary>Klik hier voor een voorbeeldoplossing</summary>
-
-**templates/registratie.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Registratie</title>
-    </head>
-    <body>
-        <h1>Registreren</h1>
-        <form method="post" action="/registratie">
-            <div>
-                <label for="gebruikersnaam">Gebruikersnaam *</label>
-                <input type="text" id="gebruikersnaam" name="gebruikersnaam" required>
-            </div>
-
-            <div>
-                <label for="email">Email *</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-
-            <div>
-                <label for="wachtwoord">Wachtwoord *</label>
-                <input type="password" id="wachtwoord" name="wachtwoord" required minlength="6">
-            </div>
-
-            <div>
-                <label for="wachtwoord_bevestig">Bevestig wachtwoord *</label>
-                <input type="password" id="wachtwoord_bevestig" name="wachtwoord_bevestig" required minlength="6">
-            </div>
-
-            <div>
-                <label for="geboortedatum">Geboortedatum *</label>
-                <input type="date" id="geboortedatum" name="geboortedatum" required>
-            </div>
-
-            <div>
-                <label for="land">Land *</label>
-                <select id="land" name="land" required>
-                    <option value="">Kies een land...</option>
-                    <option value="nederland">Nederland</option>
-                    <option value="belgie">België</option>
-                    <option value="duitsland">Duitsland</option>
-                    <option value="frankrijk">Frankrijk</option>
-                    <option value="vk">Verenigd Koninkrijk</option>
-                </select>
-            </div>
-
-            <div>
-                <input type="checkbox" id="voorwaarden" name="voorwaarden" value="akkoord" required>
-                <label for="voorwaarden">Ik ga akkoord met de algemene voorwaarden *</label>
-            </div>
-
-            <button type="submit">Registreer</button>
-        </form>
-    </body>
-</html>
-```
-
-**main.py:**
-```python
-@app.get("/registratie", response_class=HTMLResponse)
-async def registratie_form(request: Request):
-    return templates.TemplateResponse(
-        "registratie.html",
-        {"request": request}
-    )
-
-@app.post("/registratie")
-async def registratie_submit(
-    request: Request,
-    gebruikersnaam: str = Form(...),
-    email: str = Form(...),
-    wachtwoord: str = Form(...),
-    wachtwoord_bevestig: str = Form(...),
-    geboortedatum: str = Form(...),
-    land: str = Form(...),
-    voorwaarden: str = Form(None)
-):
-    # Check of wachtwoorden overeenkomen
-    if wachtwoord != wachtwoord_bevestig:
-        return templates.TemplateResponse(
-            "registratie_error.html",
-            {
-                "request": request,
-                "error": "De wachtwoorden komen niet overeen!"
-            }
-        )
-
-    # Check of voorwaarden geaccepteerd zijn
-    if voorwaarden != "akkoord":
-        return templates.TemplateResponse(
-            "registratie_error.html",
-            {
-                "request": request,
-                "error": "Je moet akkoord gaan met de voorwaarden!"
-            }
-        )
-
-    # Alles is OK, toon success pagina
-    return templates.TemplateResponse(
-        "registratie_success.html",
-        {
-            "request": request,
-            "gebruikersnaam": gebruikersnaam,
-            "email": email,
-            "geboortedatum": geboortedatum,
-            "land": land
-        }
-    )
-```
-
-**templates/registratie_error.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Registratie Fout</title>
-    </head>
-    <body>
-        <h1>❌ Registratie mislukt</h1>
-        <p><strong>Error:</strong> {{ error }}</p>
-        <a href="/registratie">← Terug naar registratie</a>
-    </body>
-</html>
-```
-
-**templates/registratie_success.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Registratie Gelukt</title>
-    </head>
-    <body>
-        <h1>✅ Registratie Gelukt!</h1>
-        <h2>Welkom, {{ gebruikersnaam }}!</h2>
-        <p>Je account is succesvol aangemaakt.</p>
-
-        <div>
-            <p><strong>Gebruikersnaam:</strong> {{ gebruikersnaam }}</p>
-            <p><strong>Email:</strong> {{ email }}</p>
-            <p><strong>Geboortedatum:</strong> {{ geboortedatum }}</p>
-            <p><strong>Land:</strong> {{ land|capitalize }}</p>
-        </div>
-        <a href="/">← Naar homepage</a>
-    </body>
-</html>
-```
-
-**Wat is hier nieuw?**
-- Wachtwoord validatie in Python (checkt of beide velden hetzelfde zijn)
-- Voorwaarden checkbox validatie
-- Error handling met een aparte error pagina
-- Success pagina met gebruikersgegevens
-- `minlength="6"` in HTML voor minimale wachtwoordlengte
-
-</details>
-
-### Opdracht 6: Make - Enquête formulier
-
-Maak een enquête formulier over een onderwerp naar keuze (bijvoorbeeld over school, hobby's, of favoriete games). Het formulier moet bevatten:
-- Minimaal 2 tekstvelden
-- Minimaal 1 nummer veld
-- Minimaal 1 select dropdown
-- Minimaal 3 radio buttons (voor één keuze uit meerdere opties)
-- Minimaal 2 checkboxes (voor meerdere keuzes)
-
-Toon alle antwoorden op een resultaat pagina.
-
-<details>
-<summary>Klik hier voor een voorbeeldoplossing</summary>
-
-**templates/enquete.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Gaming Enquête</title>
-    </head>
-    <body>
-        <h1>🎮 Gaming Enquête</h1>
-        <p>Help ons meer te weten te komen over jouw gaming voorkeuren!</p>
-
-        <form method="post" action="/enquete">
-            <div>
-                <label for="naam">Wat is je naam?</label>
-                <input type="text" id="naam" name="naam" required>
-            </div>
-
-            <div>
-                <label for="favoriete_game">Wat is je favoriete game?</label>
-                <input type="text" id="favoriete_game" name="favoriete_game" required>
-            </div>
-
-            <div>
-                <label for="uren_per_week">Hoeveel uur game je per week?</label>
-                <input type="number" id="uren_per_week" name="uren_per_week" min="0" max="168" required>
-            </div>
-
-            <div>
-                <label for="platform">Op welk platform game je het meest?</label>
-                <select id="platform" name="platform" required>
-                    <option value="">Kies een platform...</option>
-                    <option value="pc">PC</option>
-                    <option value="playstation">PlayStation</option>
-                    <option value="xbox">Xbox</option>
-                    <option value="nintendo">Nintendo Switch</option>
-                    <option value="mobiel">Mobiel</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Hoe ervaren ben je met gaming?</label>
-                <div>
-                    <label>
-                        <input type="radio" name="ervaring" value="beginner" required>
-                        Beginner
-                    </label>
-                    <label>
-                        <input type="radio" name="ervaring" value="gemiddeld">
-                        Gemiddeld
-                    </label>
-                    <label>
-                        <input type="radio" name="ervaring" value="gevorderd">
-                        Gevorderd
-                    </label>
-                    <label>
-                        <input type="radio" name="ervaring" value="pro">
-                        Pro
-                    </label>
-                </div>
-            </div>
-
-            <div>
-                <label>Welke game genres vind je leuk? (meerdere mogelijk)</label>
-                <div>
-                    <label>
-                        <input type="checkbox" name="genres" value="actie">
-                        Actie
-                    </label>
-                    <label>
-                        <input type="checkbox" name="genres" value="avontuur">
-                        Avontuur
-                    </label>
-                    <label>
-                        <input type="checkbox" name="genres" value="rpg">
-                        RPG
-                    </label>
-                    <label>
-                        <input type="checkbox" name="genres" value="strategie">
-                        Strategie
-                    </label>
-                    <label>
-                        <input type="checkbox" name="genres" value="sport">
-                        Sport
-                    </label>
-                    <label>
-                        <input type="checkbox" name="genres" value="simulatie">
-                        Simulatie
-                    </label>
-                </div>
-            </div>
-
-            <button type="submit">Verstuur Enquête</button>
-        </form>
-    </body>
-</html>
-```
-
-**main.py:**
-```python
-from typing import List
-
-@app.get("/enquete", response_class=HTMLResponse)
-async def enquete_form(request: Request):
-    return templates.TemplateResponse(
-        "enquete.html",
-        {"request": request}
-    )
-
-@app.post("/enquete")
-async def enquete_submit(
-    request: Request,
-    naam: str = Form(...),
-    favoriete_game: str = Form(...),
-    uren_per_week: int = Form(...),
-    platform: str = Form(...),
-    ervaring: str = Form(...),
-    genres: List[str] = Form([])
-):
-    return templates.TemplateResponse(
-        "enquete_resultaat.html",
-        {
-            "request": request,
-            "naam": naam,
-            "favoriete_game": favoriete_game,
-            "uren_per_week": uren_per_week,
-            "platform": platform,
-            "ervaring": ervaring,
-            "genres": genres
-        }
-    )
-```
-
-**templates/enquete_resultaat.html:**
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Enquête Resultaat</title>
-    </head>
-    <body>
-        <h1>✅ Bedankt voor je deelname!</h1>
-
-        <p><strong>Naam:</strong> {{ naam }}</p>
-        <p><strong>Favoriete Game:</strong> 🎮 {{ favoriete_game }}</p>
-        <p><strong>Uur per week:</strong> {{ uren_per_week }}</p>
-        <p><strong>Platform:</strong> {{ platform|upper }}</p>
-
-        <p>
-            <strong>Ervaring niveau:</strong>
-            {% if ervaring == "beginner" %}
-                🌱 Beginner
-            {% elif ervaring == "gemiddeld" %}
-                ⭐ Gemiddeld
-            {% elif ervaring == "gevorderd" %}
-                🔥 Gevorderd
-            {% else %}
-                🏆 Pro
-            {% endif %}
-        </p>
-
-        <p><strong>Favoriete genres:</strong></p>
-        {% if genres %}
-            <ul>
-                {% for genre in genres %}
-                    <li>{{ genre|capitalize }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>Geen genres geselecteerd</p>
-        {% endif %}
-
-        <a href="/enquete">← Nieuwe enquête invullen</a>
-    </body>
-</html>
-```
-
-**Wat is hier nieuw?**
-- `List[str] = Form([])` - Voor het ontvangen van meerdere checkbox waarden
-- Emojis voor visuele feedback
-- Conditionele emoji's gebaseerd op ervaring niveau
-- Loop door geselecteerde genres
 
 </details>
 
 ## Troubleshooting
 
-### Form data komt niet aan
+### "Field required" error
+
+Zorg dat:
+- Het `name` attribuut in HTML overeenkomt met de Python parameter
+- Je `Form(...)` gebruikt in Python
+- Het veld is ingevuld (of gebruik `Form(None)` voor optionele velden)
+
+### Data komt niet aan
 
 Controleer:
-1. Is `name="..."` correct in de HTML?
-2. Is `method="post"` ingesteld?
-3. Heb je `Form(...)` gebruikt in de Python functie?
-4. Match de `name` in HTML met de parameter naam in Python?
-
-### 422 Error
-
-Dit betekent meestal dat:
-- Een verplicht veld niet is ingevuld
-- De data types niet kloppen (bijv. text in een number veld)
-
-### Checkbox altijd None
-
-Checkboxes sturen alleen data als ze aangevinkt zijn. Gebruik daarom:
-```python
-checkbox_waarde: str = Form(None)  # None als niet aangevinkt
-```
+- Is `method="post"` ingesteld in de `<form>` tag?
+- Staat de juiste `action="/endpoint"` in de form?
+- Heb je `from fastapi import Form` geïmporteerd?
 
 ## Samenvatting
 
-Je hebt nu geleerd om:
-- ✅ HTML formulieren te maken met verschillende input types
-- ✅ Form data te ontvangen in FastAPI met `Form(...)`
-- ✅ Verplichte en optionele velden te maken
-- ✅ Form data te valideren in Python
-- ✅ Gebruikers door te sturen na een formulier submit
-- ✅ Checkboxes en radio buttons te gebruiken
-- ✅ Meerdere waarden te ontvangen van checkboxes
+Je hebt nu geleerd:
+- ✅ HTML formulieren maken met `<form method="post">`
+- ✅ Input velden toevoegen met `<input name="...">`
+- ✅ Form data ontvangen met `Form(...)` in FastAPI
+- ✅ Het verschil tussen verplichte (`Form(...)`) en optionele (`Form(None)`) velden
+- ✅ Verschillende input types gebruiken
 
 In de volgende les gaan we kijken naar het opslaan van form data in een database!
