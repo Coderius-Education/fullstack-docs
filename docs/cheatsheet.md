@@ -6,104 +6,36 @@ sidebar_class_name: hidden
 
 Snelle referentie voor alles wat je hebt geleerd. Klik op een onderwerp om het te openen.
 
-## JavaScript
+## Python
 
 <details>
-<summary>Script toevoegen aan HTML</summary>
+<summary>Variable aanmaken</summary>
 
-```html
-<body>
-    <!-- Je HTML hier -->
-
-    <script>
-        // Je JavaScript hier
-    </script>
-</body>
-```
-
-Zet `<script>` altijd **onderaan** de `<body>`!
-
-</details>
-
-<details>
-<summary>Variabelen (let en const)</summary>
-
-```javascript
-let score = 0;       // Kan veranderen
-score = 10;
-
-const naam = "Jan";  // Kan NIET veranderen
+```python
+naam = "Jan"
+leeftijd = 16
 ```
 
 </details>
 
 <details>
-<summary>Element selecteren</summary>
+<summary>F-string (tekst met variabelen)</summary>
 
-```javascript
-document.getElementById("mijn_id")
-```
-
-Geeft het HTML element met `id="mijn_id"` terug.
-
-</details>
-
-<details>
-<summary>Inhoud veranderen (innerHTML)</summary>
-
-```javascript
-document.getElementById("titel").innerHTML = "Nieuwe tekst";
+```python
+naam = "Jan"
+print(f"Hallo {naam}!")
+# Hallo Jan!
 ```
 
 </details>
 
 <details>
-<summary>Style aanpassen</summary>
+<summary>Dictionary</summary>
 
-```javascript
-document.getElementById("titel").style.color = "blue";
-document.getElementById("titel").style.fontSize = "24px";
-document.getElementById("titel").style.backgroundColor = "yellow";
+```python
+persoon = {"naam": "Jan", "leeftijd": 16}
+print(persoon["naam"])  # Jan
 ```
-
-**Let op:** CSS `font-size` wordt `fontSize` in JavaScript (camelCase)!
-
-</details>
-
-<details>
-<summary>console.log() (debuggen)</summary>
-
-```javascript
-console.log("Dit verschijnt in de console (F12)");
-```
-
-</details>
-
-<details>
-<summary>Functie maken</summary>
-
-```javascript
-function begroet() {
-    alert("Hallo!");
-}
-
-begroet();  // Voert de functie uit
-```
-
-</details>
-
-<details>
-<summary>Klik event (addEventListener)</summary>
-
-```javascript
-function doeIets() {
-    // Code die bij klik wordt uitgevoerd
-}
-
-document.getElementById("knop").addEventListener("click", doeIets);
-```
-
-**Let op:** functienaam **zonder haakjes** bij addEventListener!
 
 </details>
 
@@ -194,8 +126,6 @@ async def verstuur(naam: str = Form(...)):
     return {"naam": naam}
 ```
 
-**Let op:** de `name` in HTML moet matchen met de Python parameter!
-
 </details>
 
 <details>
@@ -214,8 +144,6 @@ async def groet(request: Request, naam: str = Form(...)):
         {"request": request, "naam": naam}
     )
 ```
-
-**Let op:** `"request": request` moet altijd in het dictionary!
 
 </details>
 
@@ -264,12 +192,10 @@ async def groet(request: Request, naam: str = Form(...)):
 <a href="/about">Ga naar About</a>
 ```
 
-**Let op:** link naar het **endpoint**, niet naar het bestand!
-
 </details>
 
 <details>
-<summary>Formulier (POST)</summary>
+<summary>Formulier</summary>
 
 ```html
 <form method="post" action="/verstuur">
@@ -324,17 +250,8 @@ with SqliteDict("data.db") as db:
 ```python
 with SqliteDict("data.db") as db:
     print(db["naam"])
-```
-
-</details>
-
-<details>
-<summary>Data veilig uitlezen (met default)</summary>
-
-```python
-with SqliteDict("data.db") as db:
-    # Crasht niet als "naam" niet bestaat:
-    naam = db.get("naam", "Niet gevonden")
+    # Of veilig met default:
+    print(db.get("naam", "Niet gevonden"))
 ```
 
 </details>
